@@ -1,8 +1,8 @@
-import gui
+import MainWindow as mw
 
 
 def main():
-    window = gui.MainWindow()
+    window = mw.MainWindow()
     window.launch()
 
 

@@ -8,12 +8,11 @@ import math
 import ToolTip as ttip
 
 
-# TODO:
-#   multi-file functionality
 class MainWindow:
     def __init__(self):
         self.width = 500
         self.height = 350
+        self.max_files = 5
         self.full_file_paths = []
         self.selected_fnames = []
         self.colors = BgColors()
@@ -21,7 +20,7 @@ class MainWindow:
         self.main_frame = None
         self.file_label_frame = None
         self.file_frame_w = self.width - 20
-        self.file_frame_h = 130
+        self.file_frame_h = 110
 
     def launch(self):
         """
@@ -29,10 +28,10 @@ class MainWindow:
         """
         self.root.title("Speech Transcriber")
         self.root.geometry('%sx%s+300+300' % (self.width, self.height))
-        self.main_frame = tkinter.Frame(self.root, bg=self.colors.white, borderwidth=5, relief="ridge")
+        self.main_frame = tkinter.Frame(self.root, borderwidth=5, relief="ridge")
         self.main_frame.pack(expand="yes", fill="both")
 
-        desc = tkinter.Label(self.main_frame, text="File selected for transcription")
+        desc = tkinter.Label(self.main_frame, text="File selected for transcription (Max %s)" % self.max_files)
         desc.pack(padx=10)
 
         self.file_label_frame = tkinter.Frame(self.main_frame, height=self.file_frame_h, width=self.file_frame_w, bg=self.colors.light_blue, borderwidth=3, relief="sunken")
@@ -40,8 +39,7 @@ class MainWindow:
 
         frame_buttons = tkinter.Frame(self.main_frame, bg=self.colors.red, width=self.width, height=100)
         frame_buttons.pack(fill="both")
-        button_file_dialog = tkinter.Button(frame_buttons, text="Add File",
-                                            command=self.file_dialog_callback)
+        button_file_dialog = tkinter.Button(frame_buttons, text="Add File", command=self.file_dialog_callback)
         button_file_dialog.pack(side=LEFT, padx=10)
 
         self.root.mainloop()
@@ -56,6 +54,10 @@ class MainWindow:
             ("WAV files", "*.wav")
         )
         try:
+            if len(self.full_file_paths) >= self.max_files:
+                showinfo("Reached file limit", "A max of %s files can be selected" % self.max_files)
+                return
+
             file_full_path = fd.askopenfilename(
                 title="Select a file",
                 filetypes=filetypes
@@ -79,33 +81,24 @@ class MainWindow:
                 ttip.CreateToolTip(label, self.selected_fnames[i])
 
         except TypeError:
-            print("No file selected")
+            return
 
     def trim_fname_len(self, fname):
         """
         Trim down long filenames to fit nicely in the GUI window
         :param fname: File name to trim
-        :return: A subset of the filename for display purposes
+        :return: A subset of the filename
         """
-        print("Fname length: %s" % len(fname))
-        print("Frame_width: %s" % self.file_frame_w)
-        x = fname.split('8')[0]
-        print(x)
-        print(len(x))
-        trimmed_fname = ""
-        # Length of each character in pixels (approximately) for the default tkinter font
+        # Length of each character in pixels (approximately) for the default tkinter font and size
         CHAR_LEN = 8.25
         # the available characters that can be stored in the frame
         avail_char_len = math.floor(self.file_frame_w / CHAR_LEN)
-        print("Available: %s" % avail_char_len)
-        if len(fname) > avail_char_len:
+        if len(fname) >= avail_char_len:
             # subtract some characters and add a '...' to show the filename is cut off
             trimmed_fname = fname[:avail_char_len-3] + "..."
-            print("Trimmed: %s" % trimmed_fname)
-        # fname doesn't need to be trimmed
         else:
-            print("Didn't need to trim")
-            return fname
+            # fname doesn't need to be trimmed
+            trimmed_fname = fname
 
         return trimmed_fname
 
