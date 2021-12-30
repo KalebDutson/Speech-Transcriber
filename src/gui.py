@@ -21,7 +21,7 @@ class MainWindow:
         self.main_frame = None
         self.file_label_frame = None
         self.file_frame_w = self.width - 20
-        self.file_frame_h = 60
+        self.file_frame_h = 130
 
     def launch(self):
         """
@@ -60,16 +60,19 @@ class MainWindow:
                 title="Select a file",
                 filetypes=filetypes
             )
-            # add full file path to list of files to transcribe
-            self.full_file_paths.append(file_full_path)
+            if file_full_path not in self.full_file_paths:
+                # add full file path to list of files to transcribe
+                self.full_file_paths.append(file_full_path)
+            else:
+                showinfo("File already added", "You have already selected this file")
+                return
 
-            # TODO: Fix case where adding multiple files changes all the selected files to only display the most recent file selected
             # add file name to main window UI
             fname = re.split(r'\\|/', file_full_path)[-1]
             self.selected_fnames.append(fname)
             for i in range(len(self.selected_fnames)):
                 # trim long filenames to fit in the gui
-                trimmed_fname = self.trim_fname_len(fname)
+                trimmed_fname = self.trim_fname_len(self.selected_fnames[i])
                 label = tkinter.Label(self.file_label_frame, text=trimmed_fname, bg=self.colors.light_blue)
                 label.place(y=i * 20 + 2, x=2)
                 # add tooltip to display full file name
