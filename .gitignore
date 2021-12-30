@@ -1,3 +1,4 @@
 *.idea
 *docs/
 test-files/
+__pycache__
