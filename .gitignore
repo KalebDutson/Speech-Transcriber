@@ -4,3 +4,4 @@ test-files/
 __pycache__
 *model/
 *src/DeepSpeech/
+*src/ex/
