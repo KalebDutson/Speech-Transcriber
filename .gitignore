@@ -2,3 +2,5 @@
 *docs/
 test-files/
 __pycache__
+*model/
+*src/DeepSpeech/

@@ -6,6 +6,7 @@ from tkinter.messagebox import showinfo
 import re
 import math
 import ToolTip as ttip
+import Transcribe
 
 
 class MainWindow:
@@ -41,6 +42,9 @@ class MainWindow:
         frame_buttons.pack(fill="both")
         button_file_dialog = tkinter.Button(frame_buttons, text="Add File", command=self.file_dialog_callback)
         button_file_dialog.pack(side=LEFT, padx=10)
+
+        button_transcribe = tkinter.Button(frame_buttons, text="Transcribe.py Selected Files", command=self.start_transcription_callback)
+        button_transcribe.pack(side=RIGHT, padx=10)
 
         self.root.mainloop()
 
@@ -82,6 +86,13 @@ class MainWindow:
 
         except TypeError:
             return
+
+    def start_transcription_callback(self):
+        if len(self.full_file_paths) < 1:
+            showinfo("No Files to Transcribe.py", "Please select at least 1 file to transcribe")
+        # launch DeepSpeech
+        Transcribe.Transcribe(self.full_file_paths)
+
 
     def trim_fname_len(self, fname):
         """
