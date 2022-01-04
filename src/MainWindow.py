@@ -78,7 +78,7 @@ class MainWindow:
             self.selected_fnames.append(fname)
             for i in range(len(self.selected_fnames)):
                 # trim long filenames to fit in the gui
-                trimmed_fname = self.trim_fname_len(self.selected_fnames[i])
+                trimmed_fname = self.trim_fname(self.selected_fnames[i])
                 label = tkinter.Label(self.file_label_frame, text=trimmed_fname, bg=self.colors.light_blue)
                 label.place(y=i * 20 + 2, x=2)
                 # add tooltip to display full file name
@@ -94,7 +94,7 @@ class MainWindow:
         Transcribe.Transcribe(self.full_file_paths)
 
 
-    def trim_fname_len(self, fname):
+    def trim_fname(self, fname):
         """
         Trim down long filenames to fit nicely in the GUI window
         :param fname: File name to trim
