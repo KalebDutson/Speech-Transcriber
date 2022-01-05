@@ -2,6 +2,8 @@ from deepspeech import Model, version
 import os
 import numpy as np
 import wave
+from timeit import default_timer as timer
+
 
 class Transcribe:
     """
@@ -39,9 +41,16 @@ class Transcribe:
 
         # convert audio buffer into 1D numpy array
         fin = wave.open(audio_path, 'rb')
+        fs_orig = fin.getframerate()
+        audio_length = fin.getnframes() * (1/fs_orig)
         audio = np.frombuffer(fin.readframes(fin.getnframes()), np.int16)
         fin.close()
+
+        print("Starting inference")
+        inference_start = timer()
         inference = ds.stt(audio)
+        inference_end = timer() - inference_start
+        print('Inference took %0.3fs for %0.3fs audio file.' % (inference_end, audio_length))
         return inference
         # print(inference)
 
