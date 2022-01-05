@@ -3,6 +3,7 @@ from tkinter import *
 from tkinter.ttk import *
 from tkinter import filedialog as fd
 from tkinter.messagebox import showinfo
+from tkinter.ttk import Progressbar
 import re
 import math
 import ToolTip as ttip
@@ -13,29 +14,40 @@ class MainWindow:
     def __init__(self):
         self.width = 500
         self.height = 350
-        self.max_files = 5
-        self.full_file_paths = []
-        self.selected_fnames = []
         self.colors = BgColors()
         self.root = Tk()
         self.main_frame = None
+
         self.file_label_frame = None
         self.file_frame_w = self.width - 20
         self.file_frame_h = 110
+        self.max_files = 5
+        self.full_file_paths = []
+        self.selected_fnames = []
 
     def launch(self):
         """
-        Launch the main window of the Speech-Transcriber GUI
+        Launch the Speech-Transcriber GUI
         """
         self.root.title("Speech Transcriber")
         self.root.geometry('%sx%s+300+300' % (self.width, self.height))
         self.main_frame = tkinter.Frame(self.root, borderwidth=5, relief="ridge")
         self.main_frame.pack(expand="yes", fill="both")
 
+        self.build_launch_window()
+
+        self.root.mainloop()
+
+    def build_launch_window(self):
+        """
+        Build the main window.
+        All widgets are added to a single frame to make "changing" the window easier
+        """
         desc = tkinter.Label(self.main_frame, text="File selected for transcription (Max %s)" % self.max_files)
         desc.pack(padx=10)
 
-        self.file_label_frame = tkinter.Frame(self.main_frame, height=self.file_frame_h, width=self.file_frame_w, bg=self.colors.light_blue, borderwidth=3, relief="sunken")
+        self.file_label_frame = tkinter.Frame(self.main_frame, height=self.file_frame_h, width=self.file_frame_w,
+                                              bg=self.colors.light_blue, borderwidth=3, relief="sunken")
         self.file_label_frame.pack(pady=10)
 
         frame_buttons = tkinter.Frame(self.main_frame, bg=self.colors.red, width=self.width, height=100)
@@ -43,10 +55,17 @@ class MainWindow:
         button_file_dialog = tkinter.Button(frame_buttons, text="Add File", command=self.file_dialog_callback)
         button_file_dialog.pack(side=LEFT, padx=10)
 
-        button_transcribe = tkinter.Button(frame_buttons, text="Transcribe.py Selected Files", command=self.start_transcription_callback)
+        button_transcribe = tkinter.Button(frame_buttons, text="Transcribe.py Selected Files",
+                                           command=self.start_transcription_callback)
         button_transcribe.pack(side=RIGHT, padx=10)
 
-        self.root.mainloop()
+    def reset_main_frame(self):
+        """
+        Destroy the main frame so other stuff can be put on the same tkinter window
+        """
+        self.main_frame.destroy()
+        self.main_frame = tkinter.Frame(self.root, borderwidth=5, relief="ridge")
+        self.main_frame.pack(expand="yes", fill="both")
 
     def file_dialog_callback(self):
         """
@@ -90,9 +109,10 @@ class MainWindow:
     def start_transcription_callback(self):
         if len(self.full_file_paths) < 1:
             showinfo("No Files to Transcribe.py", "Please select at least 1 file to transcribe")
+            return
+        self.reset_main_frame()
         # launch DeepSpeech
         Transcribe.Transcribe(self.full_file_paths)
-
 
     def trim_fname(self, fname):
         """
@@ -112,6 +132,8 @@ class MainWindow:
             trimmed_fname = fname
 
         return trimmed_fname
+
+
 
 class BgColors:
     def __init__(self):
