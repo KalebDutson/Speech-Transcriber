@@ -8,6 +8,11 @@ import re
 import math
 import ToolTip as ttip
 import Transcribe
+import threading
+from threading import Thread
+# import multiprocessing
+import time
+import ctypes
 
 
 class MainWindow:
@@ -17,6 +22,8 @@ class MainWindow:
         self.colors = BgColors()
         self.root = Tk()
         self.main_frame = None
+        self.processing = False
+        self.transcription_process = None
 
         self.file_label_frame = None
         self.file_frame_w = self.width - 20
@@ -36,12 +43,26 @@ class MainWindow:
 
         self.build_launch_window()
 
+        # frame_count = 20
+        # frames = [PhotoImage(file='assets/black_hole.gif', format='gif -index %i' % i) for i in range(frame_count)]
+        # def update(ind):
+        #     frame = frames[ind]
+        #     ind += 1
+        #     if ind == frame_count:
+        #         ind = 0
+        #     label.configure(image=frame)
+        #     self.root.after(100, update, ind)
+        #
+        # label = Label(self.main_frame)
+        # label.pack()
+        # self.root.after(0, update, 0)
+
         self.root.mainloop()
 
     def build_launch_window(self):
         """
         Build the main window.
-        All widgets are added to a single frame to make "changing" the window easier
+        All widgets are added to a single frame to make changing the window easier
         """
         desc = tkinter.Label(self.main_frame, text="File selected for transcription (Max %s)" % self.max_files)
         desc.pack(padx=10)
@@ -58,6 +79,27 @@ class MainWindow:
         button_transcribe = tkinter.Button(frame_buttons, text="Transcribe.py Selected Files",
                                            command=self.start_transcription_callback)
         button_transcribe.pack(side=RIGHT, padx=10)
+
+        # TESTING
+        # label = Label(self.main_frame)
+        # label.pack()
+        # self.main_frame.after(100, self.update_progress_ring, label, 0)
+
+        # frame_count = 20
+        # frames = [PhotoImage(file='assets/black_hole.gif', format='gif -index %i' % i) for i in range(frame_count)]
+        #
+        # def update(ind):
+        #     frame = frames[ind]
+        #     ind += 1
+        #     if ind == frame_count:
+        #         ind = 0
+        #     label.configure(image=frame)
+        #     self.root.after(100, update, ind)
+        #
+        # label = Label(root)
+        # label.pack()
+        # root.after(0, update, 0)
+        # root.mainloop()
 
     def reset_main_frame(self):
         """
@@ -107,12 +149,62 @@ class MainWindow:
             return
 
     def start_transcription_callback(self):
+        # set as daemon so the thread is cleaned up if the main program terminates
+        self.transcription_process = Thread(target=self.start_deepspeech, daemon=True)
+        self.transcription_process.start()
+
+    def start_deepspeech(self):
         if len(self.full_file_paths) < 1:
-            showinfo("No Files to Transcribe.py", "Please select at least 1 file to transcribe")
+            showinfo("No Files to Transcribe", "Please select at least 1 file to transcribe.")
             return
-        self.reset_main_frame()
-        # launch DeepSpeech
-        Transcribe.Transcribe(self.full_file_paths)
+        elif self.processing:
+            print("hit processing button")
+            # stop multiple button clicks from transcribing the same file multiple times
+            # showinfo("Please Wait", "Files are processing.\nPlease Wait.")
+            return
+
+        progress_window = tkinter.Toplevel(self.root)
+        progress_window.geometry('%sx%s+375+400' % (350, 75))
+        # cancel_button = tkinter.Button(progress_window, text="Cancel", command=self.cancel_transcription)
+        # cancel_button.pack(side="top", padx=10)
+
+        print("Starting transcription")
+        print("Self.processing: %s" % self.processing)
+        self.processing = True
+        print("Is processing changing: %s" % self.processing)
+
+        # Transcribe.Transcribe(self.full_file_paths)
+        # TODO: Debug
+        time.sleep(2)
+        print("Done processing")
+        # close progress bar
+        progress_window.destroy()
+        self.processing = False
+
+        label = tkinter.Label(self.main_frame, text="\'Finished\' transcription")
+        label.pack(side="top")
+        self.root.update()
+
+    def cancel_transcription(self):
+        # TODO: Figure out how to cancel the daemon process
+        print("canceling transcription")
+        # try:
+
+        # returns id of the respective thread
+        # if hasattr(self.transcription_process, '_thread_id'):
+        #     thread_id = self.transcription_process._thread_id
+        # for id, thread in threading._active.items():
+        #     if thread is self.transcription_process:
+        #         thread_id = id
+
+        # res = ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, ctypes.py_object(SystemExit))
+        # if res > 1:
+        #     ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, 0)
+        #     print('Exception raise failure')
+        # # except:
+        #     print("caught error, thread terminated prematurely")
+        # self.transcription_process.join()
+
 
     def trim_fname(self, fname):
         """
@@ -126,13 +218,12 @@ class MainWindow:
         avail_char_len = math.floor(self.file_frame_w / CHAR_LEN)
         if len(fname) >= avail_char_len:
             # subtract some characters and add a '...' to show the filename is cut off
-            trimmed_fname = fname[:avail_char_len-3] + "..."
+            trimmed_fname = fname[:avail_char_len - 3] + "..."
         else:
             # fname doesn't need to be trimmed
             trimmed_fname = fname
 
         return trimmed_fname
-
 
 
 class BgColors:
