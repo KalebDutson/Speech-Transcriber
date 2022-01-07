@@ -113,29 +113,47 @@ class MainWindow:
 
     def file_dialog_callback(self):
         """
+        Button callback to launch file dialog
+        """
+        thread = Thread(target=self._open_file_dialog(), daemon=True)
+        thread.start()
+        thread.join()
+
+    def _open_file_dialog(self):
+        """
         Open the file dialog and allow the user to select a file
         """
+        valid_file = False
         filetypes = (
             ("WAV files", "*.wav"),
             ("MP3 files", "*.mp3"),
             ("All audio files", "*.mp3 *.wav"),
         )
-        try:
-            if len(self.full_file_paths) >= self.max_files:
-                showinfo("Reached file limit", "A max of %s files can be selected" % self.max_files)
+        file_full_path = fd.askopenfilename(
+            title="Select a file",
+            filetypes=filetypes
+        )
+        if isinstance(file_full_path, tuple):
+            if not file_full_path:
+                print("Tuple: No file selected")
                 return
-
-            file_full_path = fd.askopenfilename(
-                title="Select a file",
-                filetypes=filetypes
-            )
-            if file_full_path not in self.full_file_paths:
-                # add full file path to list of files to transcribe
-                self.full_file_paths.append(file_full_path)
-            else:
-                showinfo("File already added", "You have already selected this file")
+        elif isinstance(file_full_path, str):
+            if len(file_full_path) == 0:
+                print("String: No file selected")
                 return
+        if len(self.full_file_paths) >= self.max_files:
+            showinfo("Reached file limit", "A max of %s files can be selected" % self.max_files)
+            return
 
+        if file_full_path in self.full_file_paths:
+            showinfo("File already added", "You have already selected this file")
+            return
+        else:
+            valid_file = True
+
+        if valid_file:
+            # add full file path to list of files to transcribe
+            self.full_file_paths.append(file_full_path)
             # add file name to main window UI
             fname = re.split(r'\\|/', file_full_path)[-1]
             self.selected_fnames.append(fname)
@@ -147,20 +165,19 @@ class MainWindow:
                 # add tooltip to display full file name
                 ttip.CreateToolTip(label, self.selected_fnames[i])
 
-        except TypeError:
-            print(self.selected_fnames)
-            print(self.full_file_paths)
-            self.full_file_paths.pop()
-            print(self.full_file_paths)
-
-            return
 
     def start_transcription_callback(self):
+        """
+        Button callback to start DeepSpeech and transcribe files:
+        """
         # set as daemon so the thread is cleaned up if the main program terminates
-        self.transcription_process = Thread(target=self.start_deepspeech, daemon=True)
-        self.transcription_process.start()
+        thread = Thread(target=self._start_deepspeech, daemon=True)
+        thread.start()
 
-    def start_deepspeech(self):
+    def _start_deepspeech(self):
+        """
+        Call DeepSpeech to transcribe each selected file and create a new window to display each inference.
+        """
         if len(self.full_file_paths) < 1:
             showinfo("No Files to Transcribe", "Please select at least 1 file to transcribe.")
             return
