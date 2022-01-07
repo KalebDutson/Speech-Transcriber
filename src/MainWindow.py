@@ -18,7 +18,9 @@ import ctypes
 class MainWindow:
     def __init__(self):
         self.width = 500
-        self.height = 350
+        self.height = 200
+        self.xloc = 300
+        self.yloc = 300
         self.colors = BgColors()
         self.root = Tk()
         self.main_frame = None
@@ -37,7 +39,7 @@ class MainWindow:
         Launch the Speech-Transcriber GUI
         """
         self.root.title("Speech Transcriber")
-        self.root.geometry('%sx%s+300+300' % (self.width, self.height))
+        self.root.geometry('%sx%s+%s+%s' % (self.width, self.height, self.xloc, self.yloc))
         self.main_frame = tkinter.Frame(self.root, borderwidth=5, relief="ridge")
         self.main_frame.pack(expand="yes", fill="both")
 
@@ -66,17 +68,17 @@ class MainWindow:
         """
         desc = tkinter.Label(self.main_frame, text="File selected for transcription (Max %s)" % self.max_files)
         desc.pack(padx=10)
-
+        # TODO: Update the file_label_frame to use tkinter.Text to display the filenames better.
         self.file_label_frame = tkinter.Frame(self.main_frame, height=self.file_frame_h, width=self.file_frame_w,
                                               bg=self.colors.light_blue, borderwidth=3, relief="sunken")
         self.file_label_frame.pack(pady=10)
 
-        frame_buttons = tkinter.Frame(self.main_frame, bg=self.colors.red, width=self.width, height=100)
+        frame_buttons = tkinter.Frame(self.main_frame, width=self.width, height=100)
         frame_buttons.pack(fill="both")
-        button_file_dialog = tkinter.Button(frame_buttons, text="Add File", command=self.file_dialog_callback)
+        button_file_dialog = tkinter.Button(frame_buttons, text="Add File", bd=3, command=self.file_dialog_callback)
         button_file_dialog.pack(side=LEFT, padx=10)
 
-        button_transcribe = tkinter.Button(frame_buttons, text="Transcribe.py Selected Files",
+        button_transcribe = tkinter.Button(frame_buttons, text="Transcribe.py Selected Files", bd=3,
                                            command=self.start_transcription_callback)
         button_transcribe.pack(side=RIGHT, padx=10)
 
@@ -114,9 +116,9 @@ class MainWindow:
         Open the file dialog and allow the user to select a file
         """
         filetypes = (
-            ("All audio files", "*.mp3 *.wav"),
+            ("WAV files", "*.wav"),
             ("MP3 files", "*.mp3"),
-            ("WAV files", "*.wav")
+            ("All audio files", "*.mp3 *.wav"),
         )
         try:
             if len(self.full_file_paths) >= self.max_files:
@@ -146,6 +148,11 @@ class MainWindow:
                 ttip.CreateToolTip(label, self.selected_fnames[i])
 
         except TypeError:
+            print(self.selected_fnames)
+            print(self.full_file_paths)
+            self.full_file_paths.pop()
+            print(self.full_file_paths)
+
             return
 
     def start_transcription_callback(self):
@@ -164,7 +171,13 @@ class MainWindow:
             return
 
         progress_window = tkinter.Toplevel(self.root)
-        progress_window.geometry('%sx%s+375+400' % (350, 75))
+        # center progress window
+        width = 350
+        height = 75
+        xloc = self.xloc + (self.width - width) // 2
+        yloc = self.yloc + (self.height - height) // 2
+        print("xloc: %s\nyloc: %s" %(xloc, yloc))
+        progress_window.geometry('%sx%s+%s+%s' % (width, height, xloc, yloc))
         # cancel_button = tkinter.Button(progress_window, text="Cancel", command=self.cancel_transcription)
         # cancel_button.pack(side="top", padx=10)
 
@@ -173,17 +186,46 @@ class MainWindow:
         self.processing = True
         print("Is processing changing: %s" % self.processing)
 
-        # Transcribe.Transcribe(self.full_file_paths)
+        transcriptions = Transcribe.Transcribe(self.full_file_paths)
         # TODO: Debug
-        time.sleep(2)
+        # time.sleep(5)
         print("Done processing")
         # close progress bar
         progress_window.destroy()
         self.processing = False
 
-        label = tkinter.Label(self.main_frame, text="\'Finished\' transcription")
-        label.pack(side="top")
+        # label = tkinter.Label(self.main_frame, text="\'Finished\' transcription")
+        # label.pack(side="top")
         self.root.update()
+        # return
+
+        # add window to display transcription results
+        i = 0
+        last_window = None
+        for key in transcriptions.inferences:
+            results_window = tkinter.Toplevel(self.root)
+            results_window.title("Inference")
+            # First file transcribed is on top
+            if i > 0:
+                results_window.lower(belowThis=last_window)
+
+            results_window.lower(belowThis=None)
+            # add offset to window placement based on number of windows
+            xloc = self.xloc + 60 + 5*i
+            yloc = self.yloc - 120 + 5*i
+            results_window.geometry('%sx%s+%s+%s' % (500, 350, xloc, yloc))
+            frame = tkinter.Frame(results_window, borderwidth=5, relief="ridge")
+            frame.pack(expand="yes", fill="both")
+
+            # create text widget
+            text = tkinter.Text(frame)
+            fname = re.split(r'\\|/', key)[-1]
+            # add transcription inference to window
+            string = ("File:\n%s\n\nTranscription:\n" % key) + ("-" * 14 + "\n") + transcriptions.inferences[key]
+            text.insert(tkinter.END, """%s""" % string)
+            text.pack(expand=True, fill="both")
+            last_window = results_window
+            i += 1
 
     def cancel_transcription(self):
         # TODO: Figure out how to cancel the daemon process
